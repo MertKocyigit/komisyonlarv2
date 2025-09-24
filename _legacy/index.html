@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Ticaret Hesaplama Araçları</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(to bottom right, #f0f9ff, #e0e7ff, #fce7f3);
+            min-height: 100vh;
+            color: var(--gray-900);
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(180deg) translate(30px, 30px); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .status-connecting {
+            background: rgba(254, 243, 199, 0.9);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .status-connected {
+            background: rgba(209, 250, 229, 0.9);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-error {
+            background: rgba(254, 226, 226, 0.9);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: var(--gray-600);
+        }
+
+        .tool-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        .tool-tab {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-tab::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: var(--primary);
+            transition: width 0.3s ease, height 0.3s ease;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+
+        .tool-tab:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .tool-tab:hover::before {
+            width: 100%;
+            height: 100%;
+        }
+
+        .tool-tab:hover {
+            color: white;
+        }
+
+        .tool-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .marketplaces {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        .marketplace-pill {
+            flex: 1;
+            padding: 10px 8px;
+            border-radius: 50px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            min-width: 0;
+        }
+
+        .marketplace-pill::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: var(--primary);
+            transition: width 0.3s ease, height 0.3s ease;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+
+        .marketplace-pill:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .marketplace-pill:hover::before {
+            width: 100%;
+            height: 100%;
+        }
+
+        .marketplace-pill:hover {
+            color: white;
+        }
+
+        .marketplace-pill.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow-xl);
+            animation: fadeInUp 0.6s ease 0.2s both;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 20px;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .search-results {
+            margin-top: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            background: white;
+            display: none;
+            box-shadow: var(--shadow-md);
+        }
+
+        .search-results.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .search-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--gray-100);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-item:hover {
+            background: var(--gray-50);
+            padding-left: 24px;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .commission-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--danger), #f97316);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-section {
+            background: var(--gray-50);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--gray-200);
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+            font-weight: 500;
+        }
+
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .kdv-options {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .kdv-option {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid var(--gray-200);
+            border-radius: 10px;
+            background: white;
+            color: var(--gray-700);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .kdv-option:hover {
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .kdv-option.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid var(--gray-200);
+            transition: all 0.3s ease;
+        }
+
+        .toggle-group:hover {
+            border-color: var(--primary-light);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray-300);
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        input:checked + .toggle-slider {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .calculate-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .calculate-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .calculate-btn:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result-panel {
+            background: linear-gradient(135deg, var(--gray-50), white);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--gray-200);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .result-panel h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-panel h3::before {
+            content: '📊';
+            font-size: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--gray-200);
+            transition: all 0.2s ease;
+        }
+
+        .result-item:hover {
+            padding-left: 8px;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .result-label {
+            font-size: 13px;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .result-value.profit {
+            color: var(--success);
+        }
+
+        .result-value.loss {
+            color: var(--danger);
+        }
+
+        .result-matrix {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .result-matrix th {
+            background: var(--primary);
+            color: #fff;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .result-matrix td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--gray-200);
+            font-size: 14px;
+        }
+
+        .result-matrix tr:last-child td {
+            border-bottom: none;
+        }
+
+        .total-row {
+            background: var(--gray-50);
+        }
+
+        .total-row .result-label {
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .total-row .result-value {
+            font-weight: 800;
+            color: var(--primary-dark);
+            font-size: 15px;
+        }
+
+        .chart-section {
+            background: linear-gradient(135deg, white, var(--gray-50));
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 30px;
+            box-shadow: var(--shadow-md);
+            animation: fadeInUp 0.6s ease 0.3s both;
+        }
+
+        .chart-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-header::before {
+            content: '📈';
+            font-size: 24px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chart-legend {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--gray-700);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .info-box {
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .info-box.warning-box {
+            background: linear-gradient(135deg, #fef3c7, #fed7aa);
+            border: 1px solid var(--warning);
+            color: var(--gray-800);
+        }
+
+        .info-box.success-box {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border: 1px solid var(--success);
+            color: var(--gray-800);
+        }
+
+        .info-box strong {
+            font-weight: 600;
+        }
+
+        .spinner {
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            color: var(--gray-600);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        small {
+            display: block;
+            margin-top: 4px;
+            color: var(--gray-500);
+            font-size: 11px;
+        }
+
+        .placeholder {
+            color: var(--gray-500);
+            text-align: center;
+            padding: 20px 0;
+            font-style: italic;
+        }
+
+        .footer-note {
+            text-align: center;
+            color: var(--gray-500);
+            font-size: 12px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--gray-200);
+        }
+    </style>
+</head>
+<body>
+    <div id="connectionStatus" class="connection-status status-connecting">
+        Backend bağlantısı kontrol ediliyor...
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>E-Ticaret Hesaplama Araçları</h1>
+            <p>Komisyon oranlarını hesapla, karlılığını analiz et, KDV işlemlerini yönet, desi hesapla, kargo ücreti hesapla</p>
+        </div>
+
+        <!-- Tool Selection Tabs -->
+        <div class="tool-tabs">
+            <div class="tool-tab active" onclick="switchTool('commission')">💰 Komisyon Hesaplama</div>
+            <div class="tool-tab" onclick="switchTool('kdv')">🧾 KDV Hesaplama</div>
+            <div class="tool-tab" onclick="switchTool('desi')">📦 Desi Hesaplama</div>
+            <div class="tool-tab" onclick="switchTool('hepsijet')">🚛 HepsiJet Kargo</div>
+        </div>
+
+        <!-- Commission Calculator Section -->
+        <div id="commissionSection">
+            <div class="marketplaces" id="marketplacesContainer">
+                <div class="marketplace-pill" data-marketplace="trendyol">Trendyol</div>
+                <div class="marketplace-pill" data-marketplace="hepsiburada">Hepsiburada</div>
+                <div class="marketplace-pill" data-marketplace="n11">n11</div>
+                <div class="marketplace-pill" data-marketplace="amazon">Amazon</div>
+                <div class="marketplace-pill" data-marketplace="ciceksepeti">Çiçeksepeti</div>
+                <div class="marketplace-pill" data-marketplace="pttavm">PTT AVM</div>
+            </div>
+
+            <div class="main-card">
+                <div class="search-section">
+                    <div id="marketplaceWarning" class="info-box warning-box hidden">
+                        ⚠️ Lütfen önce bir pazaryeri seçin
+                    </div>
+
+                    <input type="text"
+                           class="search-input"
+                           id="searchInput"
+                           placeholder="🔍 Ürün kategorisi ara (örn: telefon, ayakkabı, kitap)">
+
+                    <div id="searchSpinner" class="hidden loading-text">
+                        <div class="spinner"></div>
+                        <span>Aranıyor...</span>
+                    </div>
+
+                    <div class="search-results" id="searchResults"></div>
+
+                    <div id="selectedProduct" class="info-box success-box hidden">
+                        ✓ <strong>Seçili Ürün:</strong>
+                        <span id="selectedProductName"></span>
+                        <span class="commission-badge" id="selectedCommission">%0</span>
+                    </div>
+                </div>
+
+                <div class="calculator-grid">
+                    <div class="input-section">
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>Alış Fiyatı (KDV Dahil)</label>
+                                <input type="number" id="buyPrice" value="700" step="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label>Satış Fiyatı (KDV Dahil)</label>
+                                <input type="number" id="salePrice" value="1000" step="0.01">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>KDV Oranı</label>
+                            <div class="kdv-options">
+                                <div class="kdv-option active" onclick="setKdv(20)">%20</div>
+                                <div class="kdv-option" onclick="setKdv(10)">%10</div>
+                                <div class="kdv-option" onclick="setKdv(1)">%1</div>
+                                <div class="kdv-option" onclick="showCustomKdv()">Diğer</div>
+                            </div>
+                            <input type="number"
+                                   id="customKdv"
+                                   class="hidden"
+                                   placeholder="Özel KDV oranı girin"
+                                   value="20"
+                                   style="margin-top: 8px;">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Komisyon Oranı (%)</label>
+                            <input type="number" id="commissionPercent" value="10" step="0.1">
+                            <small>Ürün seçildiğinde otomatik doldurulur</small>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>Hizmet Bedeli (%)</label>
+                                <input type="number" id="servicePercent" value="0" step="0.1">
+                            </div>
+                            <div class="input-group">
+                                <label>İhracat Bedeli (%)</label>
+                                <input type="number" id="exportPercent" value="0" step="0.1">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Kargo Ücreti</label>
+                            <input type="number" id="cargoPrice" value="30" step="0.01">
+                            <small>Platform tarafından kesilir</small>
+                        </div>
+
+                        <div class="toggle-group">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="includeVatDeduction">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Gider faturalarından KDV indirimi uygula</span>
+                        </div>
+
+                        <button class="calculate-btn" id="calculateBtn">
+                            Komisyon Hesapla
+                        </button>
+                    </div>
+
+                    <div class="result-panel">
+                        <h3>Hesaplama Sonucu</h3>
+                        <div id="results">
+                            <div class="result-item">
+                                <span class="result-label">Satış Fiyatı</span>
+                                <span class="result-value" id="resultSalePrice">₺0,00</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Komisyon</span>
+                                <span class="result-value" id="resultCommission">₺0,00</span></div>
+                            <div class="result-item">
+                                <span class="result-label">Hizmet Bedeli</span>
+                                <span class="result-value" id="resultService">₺0,00</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">İhracat Bedeli</span>
+                                <span class="result-value" id="resultExport">₺0,00</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Kargo Kesintisi</span>
+                                <span class="result-value" id="resultCargo">₺0,00</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Hesaba Yatan</span>
+                                <span class="result-value" id="resultPayout">₺0,00</span>
+                            </div>
+                            <div class="result-item" style="background: var(--gray-50); margin: 10px -10px; padding: 12px 10px; border-radius: 10px;">
+                                <span class="result-label" style="font-weight: 700;">Net Kar</span>
+                                <span class="result-value profit" id="resultProfit" style="font-size: 18px;">₺0,00</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Kar Marjı</span>
+                                <span class="result-value" id="resultMargin">%0,00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <h3 class="chart-header">Maliyet Dağılımı</h3>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-grid">
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #10b981;"></span>
+                                <span>Net Kar</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #3b82f6;"></span>
+                                <span>Alış Maliyeti</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #ef4444;"></span>
+                                <span>Komisyon</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #f59e0b;"></span>
+                                <span>Hizmet Bedeli</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #8b5cf6;"></span>
+                                <span>İhracat Bedeli</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #6b7280;"></span>
+                                <span>Kargo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KDV Calculator Section -->
+        <div id="kdvSection" class="hidden">
+            <div class="main-card">
+                <div class="calculator-grid">
+                    <div class="input-section">
+                        <div class="input-group">
+                            <label for="kdvAmount">Tutar</label>
+                            <input type="number" id="kdvAmount" value="0" step="0.01" placeholder="₺0,00"/>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="kdvAmountType">Tutar Türü</label>
+                            <select id="kdvAmountType">
+                                <option value="incl">Tutar (KDV Dahil)</option>
+                                <option value="excl">Tutar (KDV Hariç)</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label>KDV Oranı</label>
+                            <div class="kdv-options">
+                                <div class="kdv-option" data-rate="1" onclick="setKdvRate(1)">%1</div>
+                                <div class="kdv-option" data-rate="10" onclick="setKdvRate(10)">%10</div>
+                                <div class="kdv-option active" data-rate="20" onclick="setKdvRate(20)">%20</div>
+                            </div>
+                        </div>
+
+                        <div class="toggle-group">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="kdvWithholdToggle"/>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Tevkifat Uygulanacak</span>
+                        </div>
+
+                        <button class="calculate-btn" id="kdvCalcBtn">
+                            KDV Hesapla
+                        </button>
+                    </div>
+
+                    <div class="result-panel">
+                        <h3>Sonuç</h3>
+                        <div id="kdvPlaceholder" class="placeholder">Sonucu görmek için tutar girip "KDV HESAPLA" butonuna basın.</div>
+                        <div id="kdvResultsTable" style="display:none">
+                            <table class="result-matrix">
+                                <thead>
+                                    <tr>
+                                        <th colspan="2">KDV Hesaplama Detayları</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="result-label">Net Tutar (KDV Hariç)</td>
+                                        <td class="result-value" id="kdvNetAmount">₺0,00</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="result-label">KDV Tutarı</td>
+                                        <td class="result-value" id="kdvVatAmount">₺0,00</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="result-label">Brüt Tutar (KDV Dahil)</td>
+                                        <td class="result-value" id="kdvGrossAmount">₺0,00</td>
+                                    </tr>
+                                    <tr id="kdvWithholdingRow" style="display:none">
+                                        <td class="result-label">Tevkifat Tutarı</td>
+                                        <td class="result-value" id="kdvWithholdingAmount">₺0,00</td>
+                                    </tr>
+                                    <tr id="kdvPayableRow" style="display:none" class="total-row">
+                                        <td class="result-label">Ödenecek KDV</td>
+                                        <td class="result-value" id="kdvPayableVat">₺0,00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="footer-note">Hesaplama <code>/api/calc/kdv</code> üzerinden yapılır.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desi Calculator Section -->
+        <div id="desiSection" class="hidden">
+            <div class="main-card">
+                <div class="calculator-grid">
+                    <div class="input-section">
+                        <div class="input-group">
+                            <label for="desiWidth">Uzunluk (cm)</label>
+                            <input type="number" id="desiWidth" value="" step="0.01" placeholder="Uzunluğu giriniz"/>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="desiHeight">Genişlik (cm)</label>
+                            <input type="number" id="desiHeight" value="" step="0.01" placeholder="Genişliği giriniz"/>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="desiLength">Yükseklik (cm)</label>
+                            <input type="number" id="desiLength" value="" step="0.01" placeholder="Yüksekliği giriniz"/>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="desiFactor">Desi Faktörü</label>
+                            <input type="number" id="desiFactor" value="3000" step="1" placeholder="3000"/>
+                            <small>Genellikle 3000 kullanılır (kargo şirketine göre değişebilir)</small>
+                        </div>
+
+                        <div class="input-row" style="margin-top: 20px;">
+                            <button class="calculate-btn" id="desiCalcBtn">
+                                Desi Hesapla
+                            </button>
+                            <button class="calculate-btn" onclick="clearDesiForm()" style="background: var(--gray-400); margin-left: 10px;">
+                                Temizle
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="result-panel">
+                        <h3>Sonuç</h3>
+                        <div id="desiPlaceholder" class="placeholder">Desi değerini görmek için ölçüleri girip "DESİ HESAPLA" butonuna basın.</div>
+                        <div id="desiResultsTable" style="display:none">
+                            <table class="result-matrix">
+                                <thead>
+                                    <tr>
+                                        <th colspan="2">Desi Hesaplama Detayları</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="result-label">Hacim (cm³)</td>
+                                        <td class="result-value" id="desiVolumeCm3">0 cm³</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="result-label">Hacim (m³)</td>
+                                        <td class="result-value" id="desiVolumeM3">0 m³</td>
+                                    </tr>
+                                    <tr class="total-row">
+                                        <td class="result-label">Desi Değeri</td>
+                                        <td class="result-value" id="desiValue">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="result-label">Hacimsel Ağırlık</td>
+                                        <td class="result-value" id="desiWeight">0 kg</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="footer-note">Hesaplama <code>/api/calc/desi</code> üzerinden yapılır.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HepsiJet Cargo Calculator Section -->
+        <div id="hepsijetSection" class="hidden">
+            <div class="main-card">
+                <div class="calculator-grid">
+                    <div class="input-section">
+                        <div class="input-group">
+                            <label for="cargoDesiValue">Desi Değeri</label>
+                            <input type="number" id="cargoDesiValue" value="" step="0.01" placeholder="Desi değerini giriniz"/>
+                            <small>Paketinizin desi değerini girin</small>
+                        </div>
+
+                        <button class="calculate-btn" id="cargoCalcBtn">
+                            Kargo Ücreti Hesapla
+                        </button>
+                    </div>
+
+                    <div class="result-panel">
+                        <h3>Kargo Hesaplama Sonucu</h3>
+                        <div id="cargoPlaceholder" class="placeholder">Kargo ücretini görmek için desi değerini girip "KARGO ÜCRETİ HESAPLA" butonuna basın.</div>
+                        <div id="cargoResultsTable" style="display:none">
+                            <table class="result-matrix">
+                                <thead>
+                                    <tr>
+                                        <th colspan="2">HepsiJet Kargo Detayları</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="result-label">Girilen Desi</td>
+                                        <td class="result-value" id="cargoInputDesi">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="result-label">En Yakın Desi</td>
+                                        <td class="result-value" id="cargoClosestDesi">0</td>
+                                    </tr>
+                                    <tr class="total-row">
+                                        <td class="result-label">Kargo Ücreti</td>
+                                        <td class="result-value" id="cargoTotalPriceResult">₺0,00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="footer-note">Hesaplama <code>/api/calc/hepsijet</code> üzerinden yapılır.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let selectedMarketplace = null;
+        let selectedProduct = null;
+        let currentKdv = 20;
+        let currentKdvRate = 20;
+        let chartInstance = null;
+        let API_BASE_URL = null;
+        let searchTimeout = null;
+        let currentTool = 'commission';
+
+        const API_PORTS = [5000, 5001, 8000, 8080, 3000];
+
+        // Tool switching
+        function switchTool(tool) {
+            currentTool = tool;
+
+            document.querySelectorAll('.tool-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Show/hide sections
+            const sections = ['commissionSection', 'kdvSection', 'desiSection', 'hepsijetSection'];
+            sections.forEach(sectionId => {
+                document.getElementById(sectionId).classList.add('hidden');
+            });
+
+            if (tool === 'commission') {
+                document.getElementById('commissionSection').classList.remove('hidden');
+            } else if (tool === 'kdv') {
+                document.getElementById('kdvSection').classList.remove('hidden');
+            } else if (tool === 'desi') {
+                document.getElementById('desiSection').classList.remove('hidden');
+            } else if (tool === 'hepsijet') {
+                document.getElementById('hepsijetSection').classList.remove('hidden');
+            }
+        }
+
+        // Find working API
+        async function findWorkingAPI() {
+            try {
+                const res = await fetch(`/api/health`, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        API_BASE_URL = `/api`;
+                        return true;
+                    }
+                }
+            } catch (_) { }
+
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            const PORTS = [5000, 5001, 8000, 8080, 3000];
+            for (const port of PORTS) {
+                const testUrl = `${protocol}//${hostname}:${port}/api`;
+                try {
+                    const r = await fetch(`${testUrl}/health`, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+                    if (r.ok) {
+                        const data = await r.json();
+                        if (data.success) {
+                            API_BASE_URL = testUrl;
+                            return true;
+                        }
+                    }
+                } catch (_) { continue; }
+            }
+            return false;
+        }
+
+        // Update connection status
+        function updateConnectionStatus(status, message) {
+            const element = document.getElementById('connectionStatus');
+            element.className = `connection-status status-${status}`;
+            element.textContent = message;
+        }
+
+        // Initialize connection
+        async function initConnection() {
+            updateConnectionStatus('connecting', 'Backend bağlantısı kontrol ediliyor...');
+
+            const connected = await findWorkingAPI();
+            if (connected) {
+                updateConnectionStatus('connected', `✓ Bağlandı`);
+                await loadMarketplaces();
+
+                const path = window.location.pathname;
+                const parts = path.split('/').filter(Boolean);
+                if (parts.length > 0) {
+                    const marketplace = parts[parts.length - 1];
+                    if (['trendyol', 'hepsiburada', 'n11', 'amazon', 'ciceksepeti', 'pttavm'].includes(marketplace)) {
+                        selectMarketplace(marketplace);
+                    }
+                }
+            } else {
+                updateConnectionStatus('error', '✗ Backend bulunamadı');
+                showBackendError();
+            }
+        }
+
+        function showBackendError() {
+            const warning = document.getElementById('marketplaceWarning');
+            warning.innerHTML = '⚠️ Backend bağlantısı bulunamadı. Flask sunucusunu çalıştırın: <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">python app.py</code>';
+            warning.classList.remove('hidden');
+        }
+
+        async function loadMarketplaces() {
+            if (!API_BASE_URL) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/marketplaces`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const container = document.getElementById('marketplacesContainer');
+                    container.innerHTML = '';
+
+                    data.data.forEach(mp => {
+                        const pill = document.createElement('div');
+                        pill.className = 'marketplace-pill';
+                        pill.dataset.marketplace = mp.id;
+                        pill.textContent = mp.name;
+                        pill.onclick = () => selectMarketplace(mp.id);
+                        container.appendChild(pill);
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load marketplaces:', e);
+            }
+        }
+
+        function selectMarketplace(marketplace) {
+            selectedMarketplace = marketplace;
+
+            document.querySelectorAll('.marketplace-pill').forEach(pill => {
+                pill.classList.remove('active');
+            });
+            const activePill = document.querySelector(`[data-marketplace="${marketplace}"]`);
+            if (activePill) {
+                activePill.classList.add('active');
+            }
+
+            const newPath = window.location.pathname.startsWith('/local')
+                ? `/local/${marketplace}`
+                : `/${marketplace}`;
+            window.history.pushState({}, '', newPath);
+
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchResults').classList.remove('show');
+            document.getElementById('selectedProduct').classList.add('hidden');
+            document.getElementById('marketplaceWarning').classList.add('hidden');
+            document.getElementById('searchInput').value = '';
+            selectedProduct = null;
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value;
+
+            if (!selectedMarketplace) {
+                document.getElementById('marketplaceWarning').classList.remove('hidden');
+                return;
+            }
+
+            if (query.length < 2) {
+                document.getElementById('searchResults').classList.remove('show');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => searchProducts(query), 500);
+        });
+
+        async function searchProducts(query) {
+            if (!API_BASE_URL || !selectedMarketplace) return;
+
+            document.getElementById('searchSpinner').classList.remove('hidden');
+            document.getElementById('searchResults').innerHTML = '';
+
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/search?marketplace=${selectedMarketplace}&q=${encodeURIComponent(query)}`
+                );
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    displaySearchResults(data.data);
+                }
+            } catch (e) {
+                console.error('Search failed:', e);
+            } finally {
+                document.getElementById('searchSpinner').classList.add('hidden');
+            }
+        }
+
+        function displaySearchResults(results) {
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '';
+
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div class="search-item">Sonuç bulunamadı</div>';
+                resultsDiv.classList.add('show');
+                return;
+            }
+
+            results.slice(0, 20).forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+
+                const displayText = item.displayProductGroup ||
+                    [item.category, item.subCategory, item.productGroup]
+                        .filter(Boolean)
+                        .join(' → ') ||
+                    item.productGroup ||
+                    '—';
+
+                const commission = item.commissionPercent || 0;
+
+                div.innerHTML = `
+                    <span>${displayText}</span>
+                    <span class="commission-badge">%${commission}</span>
+                `;
+
+                div.onclick = () => selectProduct(item);
+                resultsDiv.appendChild(div);
+            });
+
+            resultsDiv.classList.add('show');
+        }
+
+        function selectProduct(product) {
+            selectedProduct = product;
+
+            const displayText = product.displayProductGroup ||
+                [product.category, product.subCategory, product.productGroup]
+                    .filter(Boolean)
+                    .join(' → ') ||
+                product.productGroup ||
+                '—';
+
+            document.getElementById('selectedProductName').textContent = displayText;
+            document.getElementById('selectedCommission').textContent = `%${product.commissionPercent || 0}`;
+            document.getElementById('commissionPercent').value = product.commissionPercent || 0;
+            document.getElementById('selectedProduct').classList.remove('hidden');
+            document.getElementById('searchResults').classList.remove('show');
+            document.getElementById('searchInput').value = '';
+        }
+
+        function setKdv(value) {
+            currentKdv = value;
+            document.querySelectorAll('#commissionSection .kdv-option').forEach(opt => opt.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('customKdv').classList.add('hidden');
+            document.getElementById('customKdv').value = value;
+        }
+
+        function setKdvRate(value) {
+            currentKdvRate = value;
+            document.querySelectorAll('#kdvSection .kdv-option').forEach(opt => opt.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function showCustomKdv() {
+            document.querySelectorAll('#commissionSection .kdv-option').forEach(opt => opt.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('customKdv').classList.remove('hidden');
+        }
+
+        async function calculate() {
+            if (!API_BASE_URL) {
+                alert('Backend bağlantısı yok!');
+                return;
+            }
+
+            if (!selectedMarketplace) {
+                alert('Lütfen bir pazaryeri seçin!');
+                return;
+            }
+
+            const button = document.getElementById('calculateBtn');
+            button.disabled = true;
+            button.textContent = '⏳ Hesaplanıyor...';
+
+            const customKdvInput = document.getElementById('customKdv');
+            const kdvRate = !customKdvInput.classList.contains('hidden')
+                ? (parseFloat(customKdvInput.value) || currentKdv)
+                : currentKdv;
+
+            const params = {
+                marketplace: selectedMarketplace,
+                salePrice: parseFloat(document.getElementById('salePrice').value) || 0,
+                buyPrice: parseFloat(document.getElementById('buyPrice').value) || 0,
+                cargoPrice: parseFloat(document.getElementById('cargoPrice').value) || 0,
+                vatPercent: kdvRate,
+                commissionPercent: parseFloat(document.getElementById('commissionPercent').value) || 0,
+                servicePercent: parseFloat(document.getElementById('servicePercent').value) || 0,
+                exportPercent: parseFloat(document.getElementById('exportPercent').value) || 0,
+                includeVatDeduction: document.getElementById('includeVatDeduction').checked
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/calculate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    displayResults(data.data);
+                    updateChart(data.data);
+                } else {
+                    alert('Hesaplama hatası: ' + (data.error || 'Bilinmeyen hata'));
+                }
+            } catch (e) {
+                console.error('Calculate error:', e);
+                alert('Hesaplama sırasında hata oluştu');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Komisyon Hesapla';
+            }
+        }
+
+        async function calculateKdv() {
+            const amount = Number(document.getElementById('kdvAmount').value);
+            if (!isFinite(amount) || amount <= 0) {
+                alert('Lütfen geçerli bir tutar girin.');
+                return;
+            }
+
+            const amountType = document.getElementById('kdvAmountType').value;
+            const rate = currentKdvRate;
+            const withhold = document.getElementById('kdvWithholdToggle').checked;
+
+            const body = {
+                direction: (amountType === 'incl') ? 'remove' : 'add',
+                price: amount,
+                rate: rate,
+                rounding: 'even'
+            };
+
+            if (withhold) {
+                body.withholdingRate = '7/10';
+            }
+
+            try {
+                const res = await fetch('/api/calc/kdv', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const json = await res.json();
+
+                const placeholder = document.getElementById('kdvPlaceholder');
+                const resultsTable = document.getElementById('kdvResultsTable');
+                const withholdingRow = document.getElementById('kdvWithholdingRow');
+                const payableRow = document.getElementById('kdvPayableRow');
+
+                if (!json.success) {
+                    placeholder.style.display = 'block';
+                    resultsTable.style.display = 'none';
+                    placeholder.textContent = 'Hata: ' + (json.error || 'Bilinmeyen hata');
+                    return;
+                }
+
+                const d = json.data;
+                placeholder.style.display = 'none';
+                resultsTable.style.display = 'block';
+
+                document.getElementById('kdvNetAmount').textContent = formatCurrency(d.priceExclVat);
+                document.getElementById('kdvVatAmount').textContent = formatCurrency(d.vatAmount);
+                document.getElementById('kdvGrossAmount').textContent = formatCurrency(d.priceInclVat);
+
+                if (withhold) {
+                    document.getElementById('kdvWithholdingAmount').textContent = formatCurrency(d.withholdingAmount || 0);
+                    document.getElementById('kdvPayableVat').textContent = formatCurrency(d.payableVat || d.vatAmount);
+                    withholdingRow.style.display = 'table-row';
+                    payableRow.style.display = 'table-row';
+                } else {
+                    withholdingRow.style.display = 'none';
+                    payableRow.style.display = 'none';
+                }
+
+            } catch (error) {
+                const placeholder = document.getElementById('kdvPlaceholder');
+                const resultsTable = document.getElementById('kdvResultsTable');
+                placeholder.style.display = 'block';
+                resultsTable.style.display = 'none';
+                placeholder.textContent = 'Bağlantı hatası: ' + error.message;
+            }
+        }
+
+        async function calculateDesi() {
+            const width = Number(document.getElementById('desiWidth').value);
+            const height = Number(document.getElementById('desiHeight').value);
+            const length = Number(document.getElementById('desiLength').value);
+            const desiFactor = Number(document.getElementById('desiFactor').value) || 3000;
+
+            if (!isFinite(width) || width <= 0) {
+                alert('Lütfen geçerli bir uzunluk değeri girin.');
+                return;
+            }
+            if (!isFinite(height) || height <= 0) {
+                alert('Lütfen geçerli bir genişlik değeri girin.');
+                return;
+            }
+            if (!isFinite(length) || length <= 0) {
+                alert('Lütfen geçerli bir yükseklik değeri girin.');
+                return;
+            }
+
+            const body = {
+                width: width,
+                height: height,
+                length: length,
+                desi_factor: desiFactor
+            };
+
+            try {
+                const res = await fetch('/api/calc/desi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const json = await res.json();
+
+                const placeholder = document.getElementById('desiPlaceholder');
+                const resultsTable = document.getElementById('desiResultsTable');
+
+                if (!json.success) {
+                    placeholder.style.display = 'block';
+                    resultsTable.style.display = 'none';
+                    placeholder.textContent = 'Hata: ' + (json.error || 'Bilinmeyen hata');
+                    return;
+                }
+
+                const d = json.data;
+                placeholder.style.display = 'none';
+                resultsTable.style.display = 'block';
+
+                document.getElementById('desiVolumeCm3').textContent = formatNumber(d.volumeCm3) + ' cm³';
+                document.getElementById('desiVolumeM3').textContent = formatNumber(d.volumeM3, 6) + ' m³';
+                document.getElementById('desiValue').textContent = formatNumber(d.desi, 2);
+                document.getElementById('desiWeight').textContent = formatNumber(d.volumetricWeight, 2) + ' kg';
+
+            } catch (error) {
+                const placeholder = document.getElementById('desiPlaceholder');
+                const resultsTable = document.getElementById('desiResultsTable');
+                placeholder.style.display = 'block';
+                resultsTable.style.display = 'none';
+                placeholder.textContent = 'Bağlantı hatası: ' + error.message;
+            }
+        }
+
+        async function calculateCargo() {
+            const desiValue = Number(document.getElementById('cargoDesiValue').value);
+
+            if (!isFinite(desiValue) || desiValue <= 0) {
+                alert('Lütfen geçerli bir desi değeri girin.');
+                return;
+            }
+
+            const body = {
+                desi: desiValue
+            };
+
+            try {
+                const res = await fetch('/api/calc/hepsijet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const json = await res.json();
+
+                const placeholder = document.getElementById('cargoPlaceholder');
+                const resultsTable = document.getElementById('cargoResultsTable');
+
+                if (!json.success) {
+                    placeholder.style.display = 'block';
+                    resultsTable.style.display = 'none';
+                    placeholder.textContent = 'Hata: ' + (json.error || 'Bilinmeyen hata');
+                    return;
+                }
+
+                const d = json.data;
+                placeholder.style.display = 'none';
+                resultsTable.style.display = 'block';
+
+                document.getElementById('cargoInputDesi').textContent = formatNumber(d.desiValue, 2);
+                document.getElementById('cargoClosestDesi').textContent = d.closestDesi;
+                document.getElementById('cargoTotalPriceResult').textContent = formatCurrency(d.price);
+
+            } catch (error) {
+                const placeholder = document.getElementById('cargoPlaceholder');
+                const resultsTable = document.getElementById('cargoResultsTable');
+                placeholder.style.display = 'block';
+                resultsTable.style.display = 'none';
+                placeholder.textContent = 'Bağlantı hatası: ' + error.message;
+            }
+        }
+
+        function clearDesiForm() {
+            document.getElementById('desiWidth').value = '';
+            document.getElementById('desiHeight').value = '';
+            document.getElementById('desiLength').value = '';
+            document.getElementById('desiFactor').value = '3000';
+
+            document.getElementById('desiPlaceholder').style.display = 'block';
+            document.getElementById('desiResultsTable').style.display = 'none';
+        }
+
+        function formatNumber(value, decimals = 2) {
+            if (value == null) return '0';
+            return new Intl.NumberFormat('tr-TR', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            }).format(value);
+        }
+
+        function displayResults(result) {
+            document.getElementById('resultSalePrice').textContent = formatCurrency(result.params.salePrice);
+            document.getElementById('resultCommission').textContent = formatCurrency(result.commissionAmount);
+            document.getElementById('resultService').textContent = formatCurrency(result.serviceAmount);
+            document.getElementById('resultExport').textContent = formatCurrency(result.exportAmount);
+            document.getElementById('resultCargo').textContent = formatCurrency(result.cargoDeduction);
+            document.getElementById('resultPayout').textContent = formatCurrency(result.payout);
+            document.getElementById('resultProfit').textContent = formatCurrency(result.netProfit);
+            document.getElementById('resultMargin').textContent = `%${result.profitMargin.toFixed(2)}`;
+
+            const profitElement = document.getElementById('resultProfit');
+            profitElement.className = result.netProfit >= 0 ? 'result-value profit' : 'result-value loss';
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('tr-TR', {
+                style: 'currency',
+                currency: 'TRY',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+
+        function updateChart(result) {
+            const ctx = document.getElementById('costChart').getContext('2d');
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const data = [];
+            const labels = [];
+            const colors = [];
+
+            if (result.netProfit > 0) {
+                data.push(result.netProfit);
+                labels.push('Net Kar');
+                colors.push('#10b981');
+            }
+
+            if (result.params.buyPrice > 0) {
+                data.push(result.params.buyPrice);
+                labels.push('Alış Maliyeti');
+                colors.push('#3b82f6');
+            }
+
+            if (result.commissionAmount > 0) {
+                data.push(result.commissionAmount);
+                labels.push('Komisyon');
+                colors.push('#ef4444');
+            }
+
+            if (result.serviceAmount > 0) {
+                data.push(result.serviceAmount);
+                labels.push('Hizmet Bedeli');
+                colors.push('#f59e0b');
+            }
+
+            if (result.exportAmount > 0) {
+                data.push(result.exportAmount);
+                labels.push('İhracat Bedeli');
+                colors.push('#8b5cf6');
+            }
+
+            if (result.cargoDeduction > 0) {
+                data.push(result.cargoDeduction);
+                labels.push('Kargo');
+                colors.push('#6b7280');
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: '#ffffff',
+                        borderWidth: 3,
+                        hoverBorderWidth: 4,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = formatCurrency(context.parsed);
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            },
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true
+                    }
+                }
+            });
+        }
+
+        // Event listeners
+        document.getElementById('calculateBtn').addEventListener('click', calculate);
+        document.getElementById('kdvCalcBtn').addEventListener('click', calculateKdv);
+        document.getElementById('desiCalcBtn').addEventListener('click', calculateDesi);
+        document.getElementById('cargoCalcBtn').addEventListener('click', calculateCargo);
+
+        // Enter key listeners
+        document.getElementById('kdvAmount').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                calculateKdv();
+            }
+        });
+
+        ['desiWidth', 'desiHeight', 'desiLength', 'desiFactor'].forEach(id => {
+            document.getElementById(id).addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    calculateDesi();
+                }
+            });
+        });
+
+        // Enter key listener for cargo
+        document.getElementById('cargoDesiValue').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                calculateCargo();
+            }
+        });
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            initConnection();
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,20 @@
+2025-08-25 12:22:25 - TrendyolCommission - INFO - Trendyol Excel Processor başlatılıyor...
+2025-08-25 12:22:25 - TrendyolCommission - INFO - Excel dosyası doğrulandı: C:\Users\CASPER\PycharmProjects\PythonProject1\Trendyol_PDF_1e1.xlsx
+2025-08-25 12:22:25 - TrendyolCommission - INFO - Header satırı aranıyor: Table 1
+2025-08-25 12:22:25 - TrendyolCommission - ERROR - Excel dosyası okunamadı: Worksheet named 'Table 1' not found
+2025-08-25 12:22:25 - TrendyolCommission - ERROR - İşlem başarısız: Worksheet named 'Table 1' not found
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Trendyol Excel Processor başlatılıyor...
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Excel dosyası doğrulandı: C:\Users\CASPER\PycharmProjects\PythonProject1\Trendyol_PDF_1e1.xlsx
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Header satırı aranıyor: Trendyol_PDF_Export
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Header bulundu (satır 1): ['Kategori', 'Alt Kategori', 'Ürün Grubu', 'Kategori Komisyon % (KDV Dahil)']
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Veri temizleme ve işleme başlıyor...
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Filtreleme: 424 -> 387 satır
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Ürün grupları ayrıştırılıyor...
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Ürün grubu explosion: 387 -> 973 satır
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Komisyon değerleri işleniyor...
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Komisyon filtreleme: 973 -> 954 satır
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Duplicate kayıtlar birleştiriliyor...
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Aggregation: 954 -> 786 satır
+2025-08-25 12:27:01 - TrendyolCommission - INFO - CSV kaydedildi: C:\Users\CASPER\PycharmProjects\PythonProject1\commissions_flat.csv (786 satır)
+2025-08-25 12:27:01 - TrendyolCommission - INFO - İstatistikler: 17 kategori, 81 alt kategori, 776 ürün grubu
+2025-08-25 12:27:01 - TrendyolCommission - INFO - Ortalama komisyon: 15.89%
