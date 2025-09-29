@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-N11 PDF Parser
---------------
-N11 komisyon PDF'lerini parse eder ve standart CSV formatında çıktı verir.
+Trendyol PDF Parser
+-------------------
+Trendyol komisyon PDF'lerini parse eder ve standart CSV formatında çıktı verir.
+Karmaşık 14-sütunlu tablo yapısını destekler.
 
 Usage:
-    python scripts/n11_pdf_parser.py --pdf "path/to/n11.pdf" --output "output.csv"
+    python scripts/trendyol_pdf_parser.py --pdf "path/to/trendyol.pdf" --output "output.csv"
 """
 
 import argparse
@@ -15,7 +16,7 @@ import logging
 import re
 import sys
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Tuple, Optional
 
 try:
     import fitz  # PyMuPDF
@@ -24,11 +25,11 @@ except ImportError:
     sys.exit(1)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
-logger = logging.getLogger("n11_pdf_parser")
+logger = logging.getLogger("trendyol_pdf_parser")
 
 
-class N11PDFParser:
-    """N11 PDF komisyon listesini parse eder."""
+class TrendyolPDFParser:
+    """Trendyol PDF komisyon listesini parse eder."""
 
     def __init__(self, pdf_path: str):
         self.pdf_path = pdf_path
@@ -93,14 +94,14 @@ class N11PDFParser:
                 return None
         return None
 
-    def extract_table_from_page(self, page_num: int) -> List[Dict[str, str]]:
-        """Bir sayfadan tablo verilerini çıkarır."""
+    def extract_table_data_from_page(self, page_num: int) -> List[Dict[str, str]]:
+        """Bir sayfadan 14-sütunlu tablo verilerini çıkarır."""
         page = self.doc[page_num]
         text = page.get_text()
 
         logger.debug(f"Sayfa {page_num + 1} işleniyor...")
 
-        # Önce tablomatik extraction dene
+        # Tabloyu tablomatik olarak çıkarmaya çalış
         tables = page.find_tables()
         page_data = []
 
@@ -113,8 +114,8 @@ class N11PDFParser:
                     df = table.to_pandas()
                     logger.debug(f"Tablo {table_idx + 1}: {df.shape[0]} satır, {df.shape[1]} sütun")
 
-                    # N11 tabloları genelde 3-4 sütunlu olur
-                    if df.shape[1] >= 3:
+                    # Sütun sayısı kontrolü (14 sütun bekliyoruz)
+                    if df.shape[1] >= 10:  # En az 10 sütun olmalı
                         page_data.extend(self.process_table_dataframe(df, page_num))
 
                 except Exception as e:
@@ -137,19 +138,16 @@ class N11PDFParser:
         # Ana sütunları bul
         category_col = None
         subcategory_col = None
-        product_col = None
-        commission_col = None
+        commission_cols = []
 
         for i, col in enumerate(columns):
             col_lower = col.lower()
             if 'kategori' in col_lower and 'alt' not in col_lower:
                 category_col = i
-            elif ('alt' in col_lower and 'kategori' in col_lower) or 'grup' in col_lower:
+            elif 'alt' in col_lower and 'kategori' in col_lower:
                 subcategory_col = i
-            elif 'ürün' in col_lower or 'product' in col_lower:
-                product_col = i
             elif '%' in col or 'komisyon' in col_lower:
-                commission_col = i
+                commission_cols.append(i)
 
         # Satırları işle
         for idx, row in df.iterrows():
@@ -160,11 +158,9 @@ class N11PDFParser:
                 if all(not val or val == 'nan' for val in row_values):
                     continue
 
-                # Kategorileri al
+                # Kategori bilgilerini al
                 category = ""
                 subcategory = ""
-                product_group = ""
-                commission = None
 
                 if category_col is not None and category_col < len(row_values):
                     category = self.clean_text(row_values[category_col])
@@ -172,36 +168,30 @@ class N11PDFParser:
                 if subcategory_col is not None and subcategory_col < len(row_values):
                     subcategory = self.clean_text(row_values[subcategory_col])
 
-                if product_col is not None and product_col < len(row_values):
-                    product_group = self.clean_text(row_values[product_col])
+                # Eğer kategori bilgisi yoksa, satırı atla
+                if not category or category == 'nan':
+                    continue
 
-                if commission_col is not None and commission_col < len(row_values):
-                    commission = self.parse_commission_rate(row_values[commission_col])
+                # Komisyon oranlarını bul
+                commission_rates = []
+                for col_idx in commission_cols:
+                    if col_idx < len(row_values):
+                        rate = self.parse_commission_rate(row_values[col_idx])
+                        if rate is not None:
+                            commission_rates.append(rate)
 
-                # Eğer spesifik sütunlar bulunamazsa, sırasıyla ata
-                if not category and len(row_values) > 0:
-                    category = self.clean_text(row_values[0])
-                if not subcategory and len(row_values) > 1:
-                    subcategory = self.clean_text(row_values[1]) or category
-                if not product_group and len(row_values) > 2:
-                    product_group = self.clean_text(row_values[2]) or subcategory
-                if commission is None and len(row_values) > 3:
-                    commission = self.parse_commission_rate(row_values[3])
+                # En düşük komisyon oranını al (varsa)
+                if commission_rates:
+                    min_commission = min(commission_rates)
 
-                # Son sütunu komisyon için kontrol et
-                if commission is None:
-                    for val in reversed(row_values):
-                        commission = self.parse_commission_rate(val)
-                        if commission is not None:
-                            break
+                    # Ürün grubu olarak kategori kullan (subcategory yoksa)
+                    product_group = subcategory if subcategory and subcategory != 'nan' else category
 
-                # Geçerli veri varsa ekle
-                if category and category != 'nan' and commission is not None:
                     data.append({
                         'Kategori': category,
                         'Alt Kategori': subcategory if subcategory and subcategory != 'nan' else category,
-                        'Ürün Grubu': product_group if product_group and product_group != 'nan' else subcategory or category,
-                        'Komisyon_%_KDV_Dahil': f"{commission:.2f}"
+                        'Ürün Grubu': product_group,
+                        'Komisyon_%_KDV_Dahil': f"{min_commission:.2f}"
                     })
 
             except Exception as e:
@@ -214,6 +204,8 @@ class N11PDFParser:
         """Text-based parsing (fallback method)."""
         lines = [line.strip() for line in text.split('\n') if line.strip()]
         data = []
+
+        current_category = ""
 
         for line in lines:
             line = self.clean_text(line)
@@ -231,25 +223,23 @@ class N11PDFParser:
                 if category_part and commission:
                     # Kategori ve alt kategori ayrımı yap
                     parts = category_part.split()
-                    if len(parts) >= 3:
+                    if len(parts) >= 2:
                         category = parts[0]
-                        subcategory = parts[1]
-                        product_group = ' '.join(parts[2:])
-                    elif len(parts) >= 2:
-                        category = parts[0]
-                        subcategory = parts[1]
-                        product_group = parts[1]
+                        subcategory = ' '.join(parts[1:])
                     else:
                         category = category_part
                         subcategory = category_part
-                        product_group = category_part
 
                     data.append({
                         'Kategori': category,
                         'Alt Kategori': subcategory,
-                        'Ürün Grubu': product_group,
+                        'Ürün Grubu': subcategory,
                         'Komisyon_%_KDV_Dahil': f"{commission:.2f}"
                     })
+
+            # Ana kategori tespiti
+            elif line.isupper() and len(line.split()) <= 3:
+                current_category = line
 
         return data
 
@@ -261,7 +251,7 @@ class N11PDFParser:
         all_data = []
         for page_num in range(self.doc.page_count):
             try:
-                page_data = self.extract_table_from_page(page_num)
+                page_data = self.extract_table_data_from_page(page_num)
                 all_data.extend(page_data)
             except Exception as e:
                 logger.warning(f"Sayfa {page_num + 1} işlenirken hata: {e}")
@@ -310,7 +300,7 @@ class N11PDFParser:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="N11 PDF komisyon parser")
+    parser = argparse.ArgumentParser(description="Trendyol PDF komisyon parser")
     parser.add_argument('--pdf', required=True, help='PDF dosyası yolu')
     parser.add_argument('--output', required=True, help='Çıktı CSV dosyası yolu')
     parser.add_argument('--log-level', default='INFO',
@@ -322,7 +312,7 @@ def main():
     logging.getLogger().setLevel(getattr(logging, args.log_level))
 
     # PDF'yi parse et
-    pdf_parser = N11PDFParser(args.pdf)
+    pdf_parser = TrendyolPDFParser(args.pdf)
 
     try:
         pdf_parser.open_pdf()

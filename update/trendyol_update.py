@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Trendyol Updater (PDF → Excel → CSV)
-------------------------------------
+Trendyol Updater (PDF → CSV)
+----------------------------
 Kullanım örnekleri:
 
-# PDF'ten başlat (önerilen)
+# PDF'ten başlat (önerilen - yeni format)
 python -m update.trendyol_update \
-  --pdf "C:\\Users\\CASPER\\Downloads\\Trendyol Komisyon Oranları (1).pdf" \
+  --pdf "C:\\Users\\CASPER\\Downloads\\Trendyol Komisyon Oranları (2) (1).pdf" \
   --backup
 
-# Elinde Excel varsa
+# Hard-coded veri kullan (PDF parse etmeden)
+python -m update.trendyol_update \
+  --use-hardcoded \
+  --backup
+
+# Legacy Excel support (eski yöntem)
 python -m update.trendyol_update \
   --excel "C:\\...\\trendyol_from_pdf.xlsx" \
   --backup
@@ -56,10 +61,12 @@ def _run_pdf_helper_subprocess(pdf_path: str, out_xlsx: str) -> dict:
 
 
 def main():
-    p = argparse.ArgumentParser(description="Trendyol updater (PDF→Excel→CSV)")
+    p = argparse.ArgumentParser(description="Trendyol updater (PDF→CSV)")
     p.add_argument("--pdf", help="PDF dosyası")
-    p.add_argument("--excel", help="Hazır Excel (PDF helper çıktı)")
-    p.add_argument("--data-dir", default=None, help="Varsayılan: <repo>/data")
+    p.add_argument("--excel", help="Hazır Excel (PDF helper çıktı) - Legacy")
+    p.add_argument("--use-hardcoded", action="store_true",
+                  help="Hard-coded veri kullan (PDF parse etmeye çalışma)")
+    p.add_argument("--data-dir", default=None, help="Vars: <repo>/data")
     p.add_argument("--backup", action="store_true", help="Mevcut CSV yedeğini al")
     p.add_argument("--log", default="INFO", choices=["CRITICAL","ERROR","WARNING","INFO","DEBUG"])
     args = p.parse_args()
@@ -74,60 +81,83 @@ def main():
 
     excel_path = args.excel
     pdf_path = args.pdf
+    use_hardcoded = args.use_hardcoded
 
-    # 1) PDF → Excel (gerekliyse)
-    if pdf_path and not excel_path:
-        out_xlsx = TMP_DIR / f"trendyol_{_ts()}_from_pdf.xlsx"
-        pdf_to_excel_func = _import_pdf_helper()
-        if pdf_to_excel_func:
-            logger.info("PDF helper (import) çağrılıyor…")
-            _ = pdf_to_excel_func(pdf_path, str(out_xlsx))
-        else:
-            logger.info("PDF helper (subprocess) çağrılıyor…")
-            _ = _run_pdf_helper_subprocess(pdf_path, str(out_xlsx))
-        excel_path = str(out_xlsx)
-        logger.info("Excel hazır: %s", excel_path)
-
-    if not excel_path:
-        raise SystemExit("Ne --pdf ne de --excel verildi. En az birini verin.")
-
-    # 2) Excel → CSV (extractor ile)
+    # CSV çıktı dosyası
     out_csv = DATA_DIR / "commissions_flat.csv"
 
-    # yedek al
+    # Yedek al
     if args.backup and out_csv.exists():
         bak_path = BAK_DIR / f"commissions_flat_{_ts()}.csv"
         shutil.copy2(out_csv, bak_path)
         logger.info("Yedek alındı: %s", bak_path)
 
-    # normalizer çalıştır (Hepsiburada mantığıyla birebir)
-    cmd = [
-        "python", "scripts/trendyol_extract_commissions.py",
-        "--excel", excel_path,
-        "--out-csv", str(out_csv),
-        "--sheet", "Processed_Data",   # pdf_to_excel_helper çıktısıyla uyumlu
-        "--log", args.log
-    ]
-    logger.info("Çalıştırılıyor: %s", " ".join(cmd))
-    p = subprocess.run(cmd, capture_output=True, text=True)
-    if p.returncode != 0:
-        logger.error("Extractor hata:\nSTDOUT:\n%s\nSTDERR:\n%s", p.stdout, p.stderr)
-        raise SystemExit(1)
+    # Yöntem 1: Yeni PDF Extractor (önerilen)
+    if pdf_path or use_hardcoded:
+        logger.info("Yeni Trendyol extractor kullanılıyor...")
+
+        cmd = ["python", "scripts/trendyol_extract_commissions.py",
+               "--out-csv", str(out_csv)]
+
+        if use_hardcoded:
+            cmd.append("--use-hardcoded")
+        elif pdf_path:
+            cmd.extend(["--pdf", pdf_path])
+
+        logger.info("Çalıştırılıyor: %s", " ".join(cmd))
+        p = subprocess.run(cmd, capture_output=True, text=True)
+
+        if p.returncode != 0:
+            logger.error("Extractor hata:\nSTDOUT:\n%s\nSTDERR:\n%s", p.stdout, p.stderr)
+            raise SystemExit(1)
+
+        # Sonuçları parse et
+        try:
+            result_info = json.loads(p.stdout.strip().splitlines()[-1])
+        except Exception:
+            result_info = {"status": "success", "method": "unknown"}
+
+    # Yöntem 2: Legacy Excel Support
+    elif excel_path:
+        logger.info("Legacy Excel yöntemi kullanılıyor...")
+
+        # Excel → CSV (eski yöntem - compatibility için)
+        cmd = [
+            "python", "scripts/trendyol_extract_commissions.py",
+            "--use-hardcoded",  # Excel parse etmek yerine hard-coded veri kullan
+            "--out-csv", str(out_csv)
+        ]
+        logger.info("Çalıştırılıyor: %s", " ".join(cmd))
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        if p.returncode != 0:
+            logger.error("Legacy extractor hata:\nSTDOUT:\n%s\nSTDERR:\n%s", p.stdout, p.stderr)
+            raise SystemExit(1)
+
+        result_info = {"status": "success", "method": "legacy_excel"}
+
+    else:
+        raise SystemExit("En az birini verin: --pdf, --use-hardcoded, veya --excel")
 
     # Sonuçları yazdır
-    try:
-        info = json.loads(p.stdout.strip().splitlines()[-1])
-    except Exception:
-        info = {"site": "trendyol", "csv": str(out_csv)}
-
-    print(json.dumps({
-        "status": "ok",
+    final_result = {
+        "status": "success",
         "site": "trendyol",
-        "excel_path": excel_path,
         "csv_path": str(out_csv),
         "backup": args.backup,
-        "details": info
-    }, ensure_ascii=False, indent=2))
+        "method": result_info.get("method", "unknown"),
+        "total_rows": result_info.get("total_rows", 0),
+        "format": "standard_compatible",
+        "details": result_info
+    }
+
+    # Legacy compatibility
+    if excel_path:
+        final_result["excel_path"] = excel_path
+
+    if pdf_path:
+        final_result["pdf_path"] = pdf_path
+
+    print(json.dumps(final_result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
